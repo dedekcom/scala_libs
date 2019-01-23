@@ -26,9 +26,26 @@ case class Tree[+A](node: A, children: List[Tree[A]]) {
     loop(children)
   }
 
+  def findSubTree(fun: A => Boolean): Option[Tree[A]] = {
+    def loop(n: List[Tree[A]]): Option[Tree[A]] = {
+      if (fun(node)) Some(this) else n match {
+        case Nil => None
+        case h :: tail => h.findSubTree(fun) match {
+          case Some(res) => Some(res)
+          case None => loop(tail)
+        }
+      }
+    }
+    loop(children)
+  }
+
   def add[B >: A](child: B): Tree[B] = Tree(node, Tree(child, Nil) :: children)
 
+  def add[B >: A](child: Tree[B]): Tree[B] = Tree(node, child :: children)
+
   def append[B >: A](child: B): Tree[B] = Tree(node, children :+ Tree(child, Nil))
+
+  def append[B >: A](child: Tree[B]): Tree[B] = Tree(node, children :+ child)
 
   def exists(fun: A => Boolean): Boolean = find(fun).isDefined
 
@@ -60,6 +77,10 @@ case class Tree[+A](node: A, children: List[Tree[A]]) {
   def reverse: Tree[A] = Tree(node, children.reverse.map(_.reverse))
 
   def size: Int = foldTopDown(0) { (acc, _) => acc + 1 }
+
+  def levels: Int = zipWithLevel.foldTopDown(0) {
+    case (cnt, (_, level)) => if (level > cnt) level else cnt
+  } + 1
 
   def foldBottomUp[B >: A, C](element: B, initial: C)(fun: (C, B) => C): C =
     loopFoldTop(initial, children, element, found = false)(fun)._1

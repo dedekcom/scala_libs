@@ -14,16 +14,18 @@ class TreeSpec extends FlatSpec with Matchers {
   val ex13: Trexample1 = Trexample1(31, "ex13")
   val ex1: Trexample1 = Trexample1(1, "ex1")
 
-  val tree = Tree(ex1, List(
-    Tree(ex11, List(
-      Tree(ex111, Nil),
-      Tree(ex112, Nil)
-    )),
-    Tree(ex12, Nil),
-    Tree(ex13, List(
-      Tree(ex131, Nil)
-    ))
-  ))
+  val tree =
+    Tree(ex1, List(
+      Tree(ex11, List(
+        Tree(ex111, Nil),
+        Tree(ex112, Nil)
+      )),
+      Tree(ex12, Nil),
+      Tree(ex13, List(
+        Tree(ex131, Nil)
+      ))
+    )
+    )
 
   it should "tree fold top down" in {
     tree.foldTopDown(0) {
@@ -51,6 +53,7 @@ class TreeSpec extends FlatSpec with Matchers {
   it should "find and exists" in {
     tree.find(t => t.name == "x") shouldEqual None
     tree.find(t => t.number1 == 500) shouldEqual Some(ex131)
+    tree.findSubTree(t => t.number1 == 500).map(_.node) shouldEqual Some(ex131)
     tree.exists(t => t.number1 == 31) shouldEqual true
   }
 
@@ -81,8 +84,9 @@ class TreeSpec extends FlatSpec with Matchers {
     ))
   }
 
-  it should "calc size" in {
+  it should "calc size and levels" in {
     tree.size shouldEqual 7
+    tree.levels shouldEqual 3
   }
 
   it should "zip with level" in {
