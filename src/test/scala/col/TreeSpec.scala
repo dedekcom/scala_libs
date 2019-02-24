@@ -33,8 +33,6 @@ class TreeSpec extends FlatSpec with Matchers {
     } shouldEqual (1 + 11 + 21 + 31 + 100 + 300 + 500)
   }
 
-  //println(tree)
-
   it should "tree fold top down with parent" in {
     tree.foldTopDown(0) {
       (acc, el) => acc + el.number1
@@ -44,7 +42,6 @@ class TreeSpec extends FlatSpec with Matchers {
   it should "fold bottom up" in {
     tree.foldBottomUp(ex1, 0) { (acc, num) => acc + num.number1 } shouldEqual 1
     tree.foldBottomUp(tree.children(0).children(1).node, 0) { (acc, num) => {
-      //println(s"test node ${num.name}")
       acc + num.number1
     } } shouldEqual (
       tree.node.number1 + tree.children(0).node.number1 + tree.children(0).children(1).node.number1)
@@ -110,14 +107,14 @@ class TreeSpec extends FlatSpec with Matchers {
       ))
     ))
 
-    tree.zipWithLevelAndIndex shouldEqual Tree((ex1, (0, 0)), List(
-      Tree((ex11, (1, 0)), List(
-        Tree((ex111, (2, 0)), Nil),
-        Tree((ex112, (2, 1)), Nil)
+    tree.zipWithLabel shouldEqual Tree((ex1, "0"), List(
+      Tree((ex11, "0.0"), List(
+        Tree((ex111, "0.0.0"), Nil),
+        Tree((ex112, "0.0.1"), Nil)
       )),
-      Tree((ex12, (1, 1)), Nil),
-      Tree((ex13, (1, 2)), List(
-        Tree((ex131, (2, 0)), Nil)
+      Tree((ex12, "0.1"), Nil),
+      Tree((ex13, "0.2"), List(
+        Tree((ex131, "0.2.0"), Nil)
       ))
     ))
 

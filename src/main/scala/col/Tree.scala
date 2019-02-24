@@ -61,15 +61,12 @@ case class Tree[+A](node: A, children: List[Tree[A]]) {
     loop(this, 0)
   }
 
-  def zipWithLevelAndIndex: Tree[(A, (Int, Int))] = {
-    def loop(nd: Tree[A], level: Int, index: Int): Tree[(A, (Int, Int))] = {
-      Tree((nd.node, (level, index)),
-        nd.children.foldLeft((List[Tree[(A, (Int, Int))]](), 0)) {
-          case ((acc, id), n) => (loop(n, level + 1, id) :: acc, id+1)
-        }._1.reverse
-      )
-    }
-    loop(this, 0, 0)
+  def zipWithLabel: Tree[(A, String)] = {
+    def loop(nd: Tree[A], label: String): Tree[(A, String)] =
+      Tree((nd.node, label), nd.children.zipWithIndex.map {
+        case (n, id) => loop(n, label + "." + id.toString)
+      })
+    loop(this, "0")
   }
 
   def isLeaf: Boolean = children.isEmpty
@@ -81,6 +78,11 @@ case class Tree[+A](node: A, children: List[Tree[A]]) {
   def levels: Int = zipWithLevel.foldTopDown(0) {
     case (cnt, (_, level)) => if (level > cnt) level else cnt
   } + 1
+
+  def toListOfLevels: List[List[A]] =
+    zipWithLevel.foldTopDown(Map[Int, List[A]]()) {
+      case (acc, (n, level)) => acc + (level -> (n :: acc.getOrElse(level, List[A]())))
+    }.toList.map(_._2)
 
   def foldBottomUp[B >: A, C](element: B, initial: C)(fun: (C, B) => C): C =
     loopFoldTop(initial, children, element, found = false)(fun)._1
