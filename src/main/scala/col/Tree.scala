@@ -13,6 +13,22 @@ case class Tree[+A](node: A, children: List[Tree[A]]) {
     loop(fun(initial, node), children)
   }
 
+  def foldUntil[B](initial: B)(fun: (B, A) => (Boolean, B)): B = {
+    def loop(acc: (Boolean, B), n: List[Tree[A]]): (Boolean, B) =
+      if(acc._1)
+        acc
+      else
+        n match {
+          case Nil => acc
+          case h :: tail =>
+            loop(fun(acc._2, h.node), h.children) match {
+              case (true, res)  => (true, res)
+              case (false, res) => loop((false, res), tail)
+            }
+        }
+    loop(fun(initial, node), children)._2
+  }
+
   def find(fun: A => Boolean): Option[A] = {
     def loop(n: List[Tree[A]]): Option[A] = {
       if (fun(node)) Some(node) else n match {

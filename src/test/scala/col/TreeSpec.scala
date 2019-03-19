@@ -33,10 +33,11 @@ class TreeSpec extends FlatSpec with Matchers {
     } shouldEqual (1 + 11 + 21 + 31 + 100 + 300 + 500)
   }
 
-  it should "tree fold top down with parent" in {
-    tree.foldTopDown(0) {
-      (acc, el) => acc + el.number1
-    } shouldEqual (1 + 11 + 21 + 31 + 100 + 300 + 500)
+  it should "tree fold until" in {
+    tree.foldUntil(false) {
+      (_, el) => val found = el == ex12
+        (found, found)
+    } shouldEqual true
   }
 
   it should "fold bottom up" in {
