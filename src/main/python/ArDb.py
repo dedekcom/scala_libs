@@ -13,16 +13,17 @@ class Db:
         if filename is not None:
             self.load(filename, loadMode, separator)
 
-    def freeDb(self):
+    def freeDb(self) -> 'Db':
         self.arDb: List[List[str]] = []
+        return self
 
-    def loadDb(self, filename: str, separator: str = '|'):
-        self.load(filename, DbLoadModeSeparator, separator)
+    def loadDb(self, filename: str, separator: str = '|') -> 'Db':
+        return self.load(filename, DbLoadModeSeparator, separator)
 
-    def loadCode(self, filename: str):
-        self.load(filename, DbLoadModeCode, ' ')
+    def loadCode(self, filename: str) -> 'Db':
+        return self.load(filename, DbLoadModeCode, ' ')
 
-    def load(self, filename: str, loadMode: int, separator: str):
+    def load(self, filename: str, loadMode: int, separator: str) -> 'Db':
         self.freeDb()
         self.separator = separator
         try:
@@ -35,6 +36,7 @@ class Db:
             dbfile.close()
         except Exception as e:
             print("Db: unable to load " + filename + ": " + str(e))
+        return self
 
     def save(self, filename):
         try:
@@ -85,6 +87,13 @@ class Db:
                 return row
         return None
 
+    def findAllRows(self, func) -> 'Db':
+        result = []
+        for row in self.arDb:
+            if func(row):
+                result.append(row)
+        return Db().createDb(result)
+
     def findRowId(self, row: List[str]) -> int:
         for r in range(len(self.arDb)):
             if self.arDb[r] == row:
@@ -103,12 +112,34 @@ class Db:
         self.arDb.append(row.copy())
         return self
 
+    def addRowRef(self, row: List[str]) -> 'Db':
+        self.arDb.append(row)
+        return self
+
     def addToRow(self, idRow: int, element: str) -> 'Db':
         self.getRow(idRow).append(element)
         return self
 
+    def extendRow(self, idRow: int, elements: List[str]) -> 'Db':
+        self.getRow(idRow).extend(elements)
+        return self
+
+    def extendLastRow(self, elements: List[str]) -> 'Db':
+        if self.isEmpty():
+            return self.addRow(elements)
+        else:
+            return self.extendRow(-1, elements)
+
     def addToLastRow(self, element: str) -> 'Db':
-        return self.addToRow(-1, element)
+        return self.extendLastRow([element])
+
+    def removeRowAt(self, idRow: int) -> 'Db':
+        if idRow >=0 and idRow < self.dbLen():
+            self.arDb.pop(idRow)
+        return self
+
+    def removeRow(self, row: List[str]) -> 'Db':
+        return self.removeRowAt(self.findRowId(row))
 
     def isEmpty(self) -> bool:
         return self.dbLen() == 0
@@ -124,9 +155,18 @@ class Db:
             self.addRow(row)
         return self
 
+    def createDb(self, listDb: List[List[str]]) -> 'Db':
+        self.freeDb()
+        for row in listDb:
+            self.addRow(row)
+        return self
+
     def sortDb(self) -> 'Db':
         self.arDb = sorted(self.arDb)
         return self
+
+    def equals(self, db: 'Db') -> bool:
+        return self.arDb == db.arDb
 
     ##############################  set operations that return new Db ##################
 
