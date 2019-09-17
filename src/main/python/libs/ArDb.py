@@ -1,6 +1,8 @@
 import re
-from typing import List
+from typing import List, Dict, Callable, TypeVar
 
+
+T = TypeVar('T')
 
 DbLoadModeSeparator: int = 0
 DbLoadModeCode: int      = 1
@@ -17,6 +19,9 @@ class Db:
         self.arDb: List[List[str]] = []
         return self
 
+    def setSeparator(self, separator: str):
+        self.separator = separator
+
     def loadDb(self, filename: str, separator: str = '|') -> 'Db':
         return self.load(filename, DbLoadModeSeparator, separator)
 
@@ -25,7 +30,7 @@ class Db:
 
     def load(self, filename: str, loadMode: int, separator: str) -> 'Db':
         self.freeDb()
-        self.separator = separator
+        self.setSeparator(separator)
         try:
             dbfile = open(filename)
             for line in dbfile.readlines():
@@ -81,13 +86,13 @@ class Db:
             idrow += 1
         return res
 
-    def findInRows(self, func) -> List[str]:
+    def findInRows(self, func: Callable[[List[str]], bool]) -> List[str]:
         for row in self.arDb:
             if func(row):
                 return row
         return None
 
-    def findAllRows(self, func) -> 'Db':
+    def findAllRows(self, func: Callable[[List[str]], bool]) -> 'Db':
         result = []
         for row in self.arDb:
             if func(row):
@@ -103,7 +108,7 @@ class Db:
     def containsRow(self, row: List[str]) -> bool:
         return self.findRowId(row) != -1
 
-    def fold(self, func, initial):
+    def fold(self, func: Callable[[T, List[str]], bool], initial: T) -> T:
         for row in self.arDb:
             initial = func(initial, row)
         return initial
@@ -173,7 +178,12 @@ class Db:
     def copyDb(self) -> 'Db':
         return Db().addToDb(self)
 
-    def mapDb(self, func) -> 'Db':
+    def reversedDb(self) -> 'Db':
+        result = self.copyDb()
+        result.arDb.reverse()
+        return result
+
+    def mapDb(self, func: Callable[[List[str]], List[str]]) -> 'Db':
         db = Db()
         for row in self.arDb:
             db.addRow(func(row))
@@ -187,12 +197,23 @@ class Db:
                 return accDb
         return self.fold(internal, Db())
 
+    def rowToKey(self, row: List[str]) -> str:
+        return self.separator.join(row)
+
     def distinctDb(self) -> 'Db':
-        return self.copyDb().sortDb().distinctNeighbours()
+        db = Db()
+        dic: Dict[str, int] = {}
+        for row in self.arDb:
+            key = self.rowToKey(row)
+            if dic.get(key, None) is None:
+                db.addRow(row)
+                dic[key] = 1
+        return db
 
     def subCommon(self, secondDb: 'Db') -> 'Db':
+        secDict = secondDb.toDictStd()
         def internal(accDb: 'Db', nextRow: List[str]):
-            if secondDb.containsRow(nextRow):
+            if secDict.get(self.rowToKey(nextRow), None) is not None:
                 return accDb
             else:
                 return accDb.addRow(nextRow)
@@ -202,3 +223,12 @@ class Db:
         db1 = self.subCommon(secondDb)
         db2 = secondDb.subCommon(self)
         return db1.addToDb(db2)
+
+    def toDict(self, funcOnRow: Callable[[List[str]], str]) -> Dict[str, List[str]]:
+        res: Dict[str, List[str]] = {}
+        for row in self.getRows():
+            res[funcOnRow(row)] = row
+        return res
+
+    def toDictStd(self) -> Dict[str, List[str]]:
+        return self.toDict(lambda row: self.rowToKey(row))
